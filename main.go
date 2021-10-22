@@ -25,13 +25,13 @@ func init() {
 }
 
 type globalCmd struct {
-	Input string
+	Input string `cli:"input,i" help:"rule file. use 'wfw gen' to generate example.json"`
 	Join  string `cli:"join,j" default:"ip" help:"join priority [ip, port]"`
 
 	Format  string `cli:"format,f" help:"[list,cmd]" default:"list"`
-	Enabled bool   `cli:"enabled" help:"if format=cmd" default:"no"`
+	Enabled bool   `cli:"enabled" help:"if --format=cmd" default:"no"`
 
-	Gen genCmd
+	Gen genCmd `help:"generates an example rule file"`
 }
 
 type RuleIF struct {
