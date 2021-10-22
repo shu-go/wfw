@@ -14,5 +14,5 @@ github.com/shu-go/gli v1.2.1/go.mod h1:bB0YEXDtEnnO3tpKiwGKr6FCeeJxm2uSc5He73IUC
 github.com/shu-go/gotwant v0.0.0-20190822031422-724391433f13/go.mod h1:UxvcvxZEQUBw6lS9UgXOPh1outjvx2+bvDlEOpCTuGo=
 github.com/shu-go/gotwant v0.0.0-20190920074605-851c8677556b h1:HZZDo+sGck6gpa2lzY9rLVuatZwm6Q7qr59R3fZTeIk=
 github.com/shu-go/gotwant v0.0.0-20190920074605-851c8677556b/go.mod h1:FZepfqvib0mXjHiaQPTv0RUD5QMpMA/FHLfBQjZRRQg=
-github.com/shu-go/rng v0.0.0-20211022003705-d9d80d9642d8 h1:5xgbK6fqsxWQdlLP8ZVhnjPfrIeCHNj2g6Rskrb0tqQ=
-github.com/shu-go/rng v0.0.0-20211022003705-d9d80d9642d8/go.mod h1:67MPeN3KEcUR0a4KxWlg7DcbsjfQLakZqI8Zqhfg1ng=
+github.com/shu-go/rng v0.1.0 h1:0/1cMKFdkFHwEKcKP5ulYo9DSI1GaPItcmYQubrz3QU=
+github.com/shu-go/rng v0.1.0/go.mod h1:67MPeN3KEcUR0a4KxWlg7DcbsjfQLakZqI8Zqhfg1ng=

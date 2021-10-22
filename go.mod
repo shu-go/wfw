@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/shu-go/gli v1.2.1
 	github.com/shu-go/gotwant v0.0.0-20190920074605-851c8677556b
-	github.com/shu-go/rng v0.0.0-20211022003705-d9d80d9642d8
+	github.com/shu-go/rng v0.1.0
 )
 
 require (
