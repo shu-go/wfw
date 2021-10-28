@@ -28,7 +28,7 @@ type globalCmd struct {
 	Input string `cli:"input,i" help:"rule file. use 'wfw gen' to generate example.json"`
 	Join  string `cli:"join,j" default:"ip" help:"join priority [ip, port]"`
 
-	Format  string `cli:"format,f" help:"[list,cmd]" default:"list"`
+	Format  string `cli:"format,f" help:"[list,json,cmd]" default:"list"`
 	Enabled bool   `cli:"enabled" help:"if --format=cmd" default:"no"`
 
 	Gen genCmd `help:"generates an example rule file"`
@@ -145,6 +145,17 @@ func (c globalCmd) Run(args []string) error {
 				rules = append(rules[:k], rules[k+1:]...)
 			}
 		}
+	}
+
+	if c.Format == "json" {
+		content, err := json.MarshalIndent(rules, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(string(content))
+
+		return nil
 	}
 
 	for _, r := range rules {
