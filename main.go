@@ -26,10 +26,12 @@ func init() {
 
 type globalCmd struct {
 	Input string `cli:"input,i" help:"rule file. use 'wfw gen' to generate example.json"`
-	Join  string `cli:"join,j" default:"ip" help:"join priority [ip, port]"`
+	Join  string `cli:"join,j" default:"ip" help:"combine [ip,port]s with the same range as much as possible"`
 
 	Format  string `cli:"format,f" help:"[list,json,cmd]" default:"list"`
 	Enabled bool   `cli:"enabled" help:"if --format=cmd" default:"no"`
+
+	Except string `cli:"except" default:"(Except: %)" help:"suffix of the name, explaining causes of splitting rules"`
 
 	Gen genCmd `help:"generates an example rule file"`
 }
@@ -97,18 +99,37 @@ func (c globalCmd) Run(args []string) error {
 					Allow:    rule.Allow,
 					Port:     pr,
 					IP:       ipr,
+					Original: true,
 				}
 				rs = append(rs, r)
 			}
 		}
 	}
 
-	result := rs.Hoge(c.Join == "port")
+	result := rs.Hoge(c.Join == "ip")
 
 	rules = rules[:0]
 	for _, r := range result {
+		name := r.Name
+
+		if c.Except != "" {
+			if len(r.Excepts) > 0 {
+				names := make([]string, 0, len(r.Excepts))
+				for k, v := range r.Excepts {
+					if v.IP && v.Port {
+						names = append(names, k)
+					} else if v.IP {
+						names = append(names, "IP of "+k)
+					} else {
+						names = append(names, "Port of "+k)
+					}
+				}
+				name += strings.Replace(c.Except, "%", strings.Join(names, ", "), 1)
+			}
+		}
+
 		rif := RuleIF{
-			Name:     r.Name,
+			Name:     name, //r.Name,
 			Desc:     r.Desc,
 			Protocol: r.Protocol,
 			Allow:    r.Allow,
@@ -124,25 +145,50 @@ func (c globalCmd) Run(args []string) error {
 		rules = append(rules, rif)
 	}
 
-	// fix Ports, join IPs
-	for i := len(rules) - 2; i >= 0; i-- {
-		for k := i + 1; k < len(rules); k++ {
-			if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
-				rules[k].Ports == rules[i].Ports {
-				//
-				rules[i].IPs += "," + rules[k].IPs
-				rules = append(rules[:k], rules[k+1:]...)
+	if c.Join == "ip" {
+		// fix Ports, join IPs
+		for i := len(rules) - 2; i >= 0; i-- {
+			for k := i + 1; k < len(rules); k++ {
+				if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
+					rules[k].Ports == rules[i].Ports {
+					//
+					rules[i].IPs += "," + rules[k].IPs
+					rules = append(rules[:k], rules[k+1:]...)
+				}
 			}
 		}
-	}
-	// fix IPs, join Ports
-	for i := len(rules) - 2; i >= 0; i-- {
-		for k := i + 1; k < len(rules); k++ {
-			if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
-				rules[k].IPs == rules[i].IPs {
-				//
-				rules[i].Ports += "," + rules[k].Ports
-				rules = append(rules[:k], rules[k+1:]...)
+		// fix IPs, join Ports
+		for i := len(rules) - 2; i >= 0; i-- {
+			for k := i + 1; k < len(rules); k++ {
+				if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
+					rules[k].IPs == rules[i].IPs {
+					//
+					rules[i].Ports += "," + rules[k].Ports
+					rules = append(rules[:k], rules[k+1:]...)
+				}
+			}
+		}
+	} else {
+		// fix Ports, join IPs
+		for i := len(rules) - 2; i >= 0; i-- {
+			for k := i + 1; k < len(rules); k++ {
+				if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
+					rules[k].Ports == rules[i].Ports {
+					//
+					rules[i].IPs += "," + rules[k].IPs
+					rules = append(rules[:k], rules[k+1:]...)
+				}
+			}
+		}
+		// fix IPs, join Ports
+		for i := len(rules) - 2; i >= 0; i-- {
+			for k := i + 1; k < len(rules); k++ {
+				if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
+					rules[k].IPs == rules[i].IPs {
+					//
+					rules[i].Ports += "," + rules[k].Ports
+					rules = append(rules[:k], rules[k+1:]...)
+				}
 			}
 		}
 	}
