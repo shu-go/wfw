@@ -12,5 +12,5 @@ require (
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/shu-go/cliparser v0.0.0-20201111232337-1ae2210033bd // indirect
+	github.com/shu-go/cliparser v0.0.0-20211030095704-21a9d4e542e9 // indirect
 )
