@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	svg "github.com/ajstarks/svgo"
 	"github.com/shu-go/gli"
 	"github.com/shu-go/rng"
 	"github.com/shu-go/wfw/wfw"
@@ -28,8 +30,11 @@ type globalCmd struct {
 	Input string `cli:"input,i" help:"rule file. use 'wfw gen' to generate example.json"`
 	Join  string `cli:"join,j" default:"ip" help:"combine [ip,port]s with the same range as much as possible"`
 
-	Format  string `cli:"format,f" help:"[list,json,cmd]" default:"list"`
+	Format  string `cli:"format,f" help:"{list,json,cmd}" default:"list"`
 	Enabled bool   `cli:"enabled" help:"if --format=cmd" default:"no"`
+
+	SVG           string `help:"output svg to {stdout, FILENAME}"`
+	SVGNameFormat string `cli:"svg-name-format,sf" default:"%_{protocol}.svg" help:""`
 
 	Except string `cli:"except" default:"(Except: %)" help:"suffix of the name, explaining causes of splitting rules"`
 
@@ -186,6 +191,225 @@ func (c globalCmd) Run(args []string) error {
 		return nil
 	}
 
+	if c.SVG != "" {
+		protocolSet := make(map[string]struct{})
+		portSet := make(map[rng.Int]struct{})
+		ipSet := make(map[rng.IPv4]struct{})
+
+		rs := wfw.RuleSet{}
+		for i := range ruleIFs {
+			// set tag based on a result rule set
+			ruleIFs[i].tag = i
+
+			// convert from []RuleIF to RuleSet back again
+			rsrs := ruleIFToRuleSet(ruleIFs[i])
+
+			for _, r := range rsrs {
+				// scan ports and ips
+				portSet[r.Port.Start.(rng.Int)] = struct{}{}
+				portSet[r.Port.End.(rng.Int)] = struct{}{}
+				ipSet[r.IP.Start.(rng.IPv4)] = struct{}{}
+				ipSet[r.IP.End.(rng.IPv4)] = struct{}{}
+				protocolSet[r.Protocol] = struct{}{}
+			}
+
+			rs = append(rs, rsrs...)
+		}
+
+		var ports []rng.Int
+		for p := range portSet {
+			ports = append(ports, p)
+		}
+		sort.Slice(ports, func(i, j int) bool {
+			return ports[i].Less(ports[j])
+		})
+
+		var ips []rng.IPv4
+		for i := range ipSet {
+			ips = append(ips, i)
+		}
+		sort.Slice(ips, func(i, j int) bool {
+			return ips[i].Less(ips[j])
+		})
+
+		const leftMargin = 120
+		const topMargin = 50
+		const cellSize = 50
+		const fontSize = 12
+
+		width := leftMargin + len(ports)*cellSize
+		height := topMargin + len(ips)*cellSize + fontSize*5
+
+		wk := make(wfw.RuleSet, 0, len(rs))
+		for protocol := range protocolSet {
+			wk = wk[:0]
+			for i := range rs {
+				if rs[i].Protocol == protocol {
+					wk = append(wk, rs[i])
+				}
+			}
+
+			var file *os.File
+			var canvas *svg.SVG
+			if c.SVG == "stdout" {
+				canvas = svg.New(os.Stdout)
+			} else {
+				name := strings.Replace(c.SVGNameFormat, "%", c.SVG, -1)
+				name = strings.Replace(name, "{protocol}", protocol, -1)
+
+				var err error
+				file, err = os.Create(name)
+				if err != nil {
+					return err
+				}
+
+				canvas = svg.New(file)
+			}
+			canvas.Start(width, height)
+
+			canvas.Style("text/css", `rect.allow{fill:lightblue}
+rect.block{fill:red}
+rect.onmouse{fill:yellow}
+rect:hover{stroke:green}
+`)
+
+			for y, p := range ips {
+				ip := fmt.Sprintf("%v", p)
+				canvas.Text(0, topMargin+y*cellSize+fontSize, ip, "font-size:"+strconv.Itoa(fontSize)+"px")
+			}
+			for x, p := range ports {
+				port := fmt.Sprintf("%v", p)
+				canvas.Text(leftMargin+x*cellSize, topMargin, port, "font-size:"+strconv.Itoa(fontSize)+"px")
+			}
+
+			// info
+			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*1, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-name"`)
+			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*2, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-desc"`)
+			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*3, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-allow"`)
+			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*4, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-ip"`)
+			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*5, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-port"`)
+
+			canvas.Translate(leftMargin, topMargin)
+
+			for i := len(wk) - 1; i >= 0; i-- {
+				left, right := 0, 0
+				for k, p := range ports {
+					if wk[i].Port.Start.Equal(p) {
+						left = k
+					}
+					if wk[i].Port.End.Equal(p) {
+						right = k
+					}
+				}
+				top, bottom := 0, 0
+				for k, p := range ips {
+					if wk[i].IP.Start.Equal(p) {
+						top = k
+					}
+					if wk[i].IP.End.Equal(p) {
+						bottom = k
+					}
+				}
+
+				basetop := i * 5 * 0
+
+				left *= cellSize
+				top *= cellSize
+				if right != 0 {
+					right = (right+1)*cellSize - 1
+				}
+				if bottom != 0 {
+					bottom = (bottom+1)*cellSize - 1
+				}
+
+				if left == right {
+					right += 10
+				}
+
+				if top == bottom {
+					bottom += 10
+				}
+
+				allowclass := "allow"
+				if !wk[i].Allow {
+					allowclass = "block"
+				}
+
+				//opacity := strconv.FormatFloat(1.0-0.01*float64(i), 'f', 1, 64)
+
+				var rif RuleIF
+				for k := range ruleIFs {
+					if ruleIFs[k].tag == wk[i].Tag {
+						rif = ruleIFs[k]
+					}
+				}
+
+				canvas.Rect(
+					left,
+					basetop+top,
+					right-left,
+					basetop+(bottom-top),
+					//"fill-opacity:"+opacity,
+					`class="rule-`+strconv.Itoa(wk[i].Tag)+` `+allowclass+` "`,
+					`wfw-name="`+rif.Name+`"`,
+					`wfw-desc="`+rif.Desc+`"`,
+					`wfw-allow="`+allowclass+`"`,
+					`wfw-ip="`+rif.IPs+`"`,
+					`wfw-port="`+rif.Ports+`"`,
+				)
+			}
+
+			canvas.Gend()
+
+			canvas.Script("text/javascript", `for (var r of document.querySelectorAll("rect")) {
+    r.addEventListener("mouseover", function() {
+        var rule = ""
+        for (var c of this.classList) {
+            if (c.startsWith("rule")) {
+                rule = c
+                break
+            }
+        }
+        if (rule=="") return
+        document.getElementsByClassName("wfw-name")[0].textContent = this.getAttribute("wfw-name")
+        document.getElementsByClassName("wfw-desc")[0].textContent = this.getAttribute("wfw-desc")
+        document.getElementsByClassName("wfw-allow")[0].textContent = this.getAttribute("wfw-allow")
+        document.getElementsByClassName("wfw-ip")[0].textContent = this.getAttribute("wfw-ip")
+        document.getElementsByClassName("wfw-port")[0].textContent = this.getAttribute("wfw-port")
+        for (var rr of document.getElementsByClassName(rule)) {
+            rr.classList.add("onmouse")
+        }
+    }, false);
+    r.addEventListener("mouseleave", function() {
+        var rule = ""
+        for (var c of this.classList) {
+            if (c.startsWith("rule")) {
+                rule = c
+                break
+            }
+        }
+        if (rule=="") return
+        document.getElementsByClassName("wfw-name")[0].textContent = ""
+        document.getElementsByClassName("wfw-desc")[0].textContent = ""
+        document.getElementsByClassName("wfw-allow")[0].textContent = ""
+        document.getElementsByClassName("wfw-ip")[0].textContent = ""
+        document.getElementsByClassName("wfw-port")[0].textContent = ""
+        for (var rr of document.getElementsByClassName(rule)) {
+            rr.classList.remove("onmouse")
+        }
+    }, false);
+}`)
+			canvas.End()
+
+			if file != nil {
+				file.Close()
+				file = nil
+			}
+		}
+
+		return nil
+	}
+
 	for _, rif := range ruleIFs {
 		if c.Format == "cmd" {
 			var enabled string
@@ -279,9 +503,17 @@ func (c genCmd) Run() error {
 			IPs:      "192.168.0.101",
 		},
 		{
-			Name:     "deny 192.168.",
+			Name:     "deny TCP from 192.168.",
 			Desc:     "3rd priority",
 			Protocol: "TCP",
+			Allow:    false,
+			Ports:    "0-65535",
+			IPs:      "192.168.0.1-192.168.255.255",
+		},
+		{
+			Name:     "deny UDP from 192.168.",
+			Desc:     "3rd priority",
+			Protocol: "UDP",
 			Allow:    false,
 			Ports:    "0-65535",
 			IPs:      "192.168.0.1-192.168.255.255",
