@@ -15,6 +15,8 @@ type Rule struct {
 
 	Original bool
 	Excepts  map[ /*Name*/ string]Except
+
+	Tag int
 }
 
 type Except struct {
@@ -135,6 +137,7 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 							IP:       rng.NewRange(e.R2.Start, e.R2.End),
 							Original: tmpIsOrig,
 							Excepts:  excepts,
+							Tag:      wkk.Tag,
 						})
 
 					} else {
@@ -147,6 +150,7 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 							IP:       rng.NewRange(e.R1.Start, e.R1.End),
 							Original: tmpIsOrig,
 							Excepts:  excepts,
+							Tag:      wkk.Tag,
 						})
 					}
 				}

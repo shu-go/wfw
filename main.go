@@ -42,6 +42,7 @@ type RuleIF struct {
 	Allow      bool
 	Ports      string `json:"Port"`
 	IPs        string `json:"IP"`
+	tag        int
 }
 
 func (c globalCmd) Run(args []string) error {
@@ -70,6 +71,11 @@ func (c globalCmd) Run(args []string) error {
 	err = json.Unmarshal(content, &ruleIFs)
 	if err != nil {
 		return err
+	}
+
+	// tagging
+	for i := range ruleIFs {
+		ruleIFs[i].tag = i
 	}
 
 	inRS := wfw.RuleSet{}
@@ -120,7 +126,7 @@ func (c globalCmd) Run(args []string) error {
 		// fix Ports, join IPs
 		for i := len(ruleIFs) - 2; i >= 0; i-- {
 			for k := i + 1; k < len(ruleIFs); k++ {
-				if ruleIFs[k].Name == ruleIFs[i].Name && ruleIFs[k].Desc == ruleIFs[i].Desc && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+				if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
 					ruleIFs[k].Ports == ruleIFs[i].Ports {
 					//
 					ruleIFs[i].IPs += "," + ruleIFs[k].IPs
@@ -131,7 +137,7 @@ func (c globalCmd) Run(args []string) error {
 		// fix IPs, join Ports
 		for i := len(ruleIFs) - 2; i >= 0; i-- {
 			for k := i + 1; k < len(ruleIFs); k++ {
-				if ruleIFs[k].Name == ruleIFs[i].Name && ruleIFs[k].Desc == ruleIFs[i].Desc && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+				if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
 					ruleIFs[k].IPs == ruleIFs[i].IPs {
 					//
 					ruleIFs[i].Ports += "," + ruleIFs[k].Ports
@@ -143,7 +149,7 @@ func (c globalCmd) Run(args []string) error {
 		// fix Ports, join IPs
 		for i := len(ruleIFs) - 2; i >= 0; i-- {
 			for k := i + 1; k < len(ruleIFs); k++ {
-				if ruleIFs[k].Name == ruleIFs[i].Name && ruleIFs[k].Desc == ruleIFs[i].Desc && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+				if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
 					ruleIFs[k].Ports == ruleIFs[i].Ports {
 					//
 					ruleIFs[i].IPs += "," + ruleIFs[k].IPs
@@ -154,7 +160,7 @@ func (c globalCmd) Run(args []string) error {
 		// fix IPs, join Ports
 		for i := len(ruleIFs) - 2; i >= 0; i-- {
 			for k := i + 1; k < len(ruleIFs); k++ {
-				if ruleIFs[k].Name == ruleIFs[i].Name && ruleIFs[k].Desc == ruleIFs[i].Desc && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+				if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
 					ruleIFs[k].IPs == ruleIFs[i].IPs {
 					//
 					ruleIFs[i].Ports += "," + ruleIFs[k].Ports
@@ -338,6 +344,7 @@ func ruleIFToRuleSet(rif RuleIF) wfw.RuleSet {
 				Port:     pr,
 				IP:       ipr,
 				Original: true,
+				Tag:      rif.tag,
 			}
 			rs = append(rs, r)
 		}
