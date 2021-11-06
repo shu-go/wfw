@@ -67,38 +67,43 @@ func (c globalCmd) Run(args []string) error {
 	}
 	file.Close()
 
-	var ruleIFs []RuleIF
-	err = json.Unmarshal(content, &ruleIFs)
+	var inRuleIFs []RuleIF
+	err = json.Unmarshal(content, &inRuleIFs)
 	if err != nil {
 		return err
 	}
 
 	// tagging
-	for i := range ruleIFs {
-		ruleIFs[i].tag = i
+	for i := range inRuleIFs {
+		inRuleIFs[i].tag = i
 	}
 
 	inRS := wfw.RuleSet{}
-	for _, rif := range ruleIFs {
+	for _, rif := range inRuleIFs {
 		inRS = append(inRS, ruleIFToRuleSet(rif)...)
 	}
 
 	result := inRS.Hoge(c.Join == "ip")
 
-	ruleIFs = ruleIFs[:0]
+	var ruleIFs []RuleIF
 	for _, r := range result {
 		name := r.Name
 
 		if c.Except != "" {
 			if len(r.Excepts) > 0 {
 				names := make([]string, 0, len(r.Excepts))
-				for k, v := range r.Excepts {
+				for t, v := range r.Excepts {
+					nm := ""
+					if t < len(inRuleIFs) {
+						nm = inRuleIFs[t].Name
+					}
+
 					if v.IP && v.Port {
-						names = append(names, k)
+						names = append(names, nm)
 					} else if v.IP {
-						names = append(names, "IP of "+k)
+						names = append(names, "IP of "+nm)
 					} else {
-						names = append(names, "Port of "+k)
+						names = append(names, "Port of "+nm)
 					}
 				}
 				name += strings.Replace(c.Except, "%", strings.Join(names, ", "), 1)
