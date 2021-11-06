@@ -74,36 +74,7 @@ func (c globalCmd) Run(args []string) error {
 
 	rs := wfw.RuleSet{}
 	for _, rule := range rules {
-		for _, p := range strings.Split(rule.Ports, ",") {
-			pp := strings.Split(p, "-")
-			var pr rng.Range
-			if len(pp) > 1 {
-				pr = rng.NewRange(Int(pp[0]), Int(pp[1]))
-			} else {
-				pr = rng.NewRange(Int(pp[0]), Int(pp[0]))
-			}
-
-			for _, ip := range strings.Split(rule.IPs, ",") {
-				ipip := strings.Split(ip, "-")
-				var ipr rng.Range
-				if len(ipip) > 1 {
-					ipr = rng.NewRange(rng.NewIPv4(strings.TrimSpace(ipip[0])), rng.NewIPv4(strings.TrimSpace(ipip[1])))
-				} else {
-					ipr = rng.NewRange(rng.NewIPv4(strings.TrimSpace(ipip[0])), rng.NewIPv4(strings.TrimSpace(ipip[0])))
-				}
-
-				r := wfw.Rule{
-					Name:     rule.Name,
-					Desc:     rule.Desc,
-					Protocol: rule.Protocol,
-					Allow:    rule.Allow,
-					Port:     pr,
-					IP:       ipr,
-					Original: true,
-				}
-				rs = append(rs, r)
-			}
-		}
+		rs = append(rs, ruleIFToruleSet(rule)...)
 	}
 
 	result := rs.Hoge(c.Join == "ip")
@@ -336,6 +307,43 @@ func StringifySeq(s rng.Sequential) string {
 		return strconv.Itoa(int(i))
 	}
 	return ""
+}
+
+func ruleIFToruleSet(rif RuleIF) wfw.RuleSet {
+	var rs wfw.RuleSet
+
+	for _, p := range strings.Split(rif.Ports, ",") {
+		pp := strings.Split(p, "-")
+		var pr rng.Range
+		if len(pp) > 1 {
+			pr = rng.NewRange(Int(pp[0]), Int(pp[1]))
+		} else {
+			pr = rng.NewRange(Int(pp[0]), Int(pp[0]))
+		}
+
+		for _, ip := range strings.Split(rif.IPs, ",") {
+			ipip := strings.Split(ip, "-")
+			var ipr rng.Range
+			if len(ipip) > 1 {
+				ipr = rng.NewRange(rng.NewIPv4(strings.TrimSpace(ipip[0])), rng.NewIPv4(strings.TrimSpace(ipip[1])))
+			} else {
+				ipr = rng.NewRange(rng.NewIPv4(strings.TrimSpace(ipip[0])), rng.NewIPv4(strings.TrimSpace(ipip[0])))
+			}
+
+			r := wfw.Rule{
+				Name:     rif.Name,
+				Desc:     rif.Desc,
+				Protocol: rif.Protocol,
+				Allow:    rif.Allow,
+				Port:     pr,
+				IP:       ipr,
+				Original: true,
+			}
+			rs = append(rs, r)
+		}
+	}
+
+	return rs
 }
 
 func main() {
