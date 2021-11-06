@@ -271,6 +271,12 @@ func (c globalCmd) Run(args []string) error {
 rect.block{fill:red}
 rect.onmouse{fill:yellow}
 rect:hover{stroke:green}
+@media (prefers-color-scheme: dark) {
+    :root {
+        background-color: black;
+        fill: white;
+    }
+}
 `)
 
 			for y, p := range ips {
