@@ -160,5 +160,25 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 		}
 	}
 
+	// remove each rule contained in another rule
+	for i := len(wk) - 1; i >= 0; i-- {
+		contained := false
+		for k := 0; k < len(wk); k++ {
+			if i == k {
+				continue
+			}
+
+			if wk[i].Protocol == wk[k].Protocol && wk[i].Allow == wk[k].Allow &&
+				wk[k].Port.ContainsRange(wk[i].Port) && wk[k].IP.ContainsRange(wk[i].IP) {
+				//
+				contained = true
+				break
+			}
+		}
+		if contained {
+			wk = append(wk[:i], wk[i+1:]...)
+		}
+	}
+
 	return wk
 }
