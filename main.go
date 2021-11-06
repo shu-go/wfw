@@ -66,20 +66,20 @@ func (c globalCmd) Run(args []string) error {
 	}
 	file.Close()
 
-	var rules []RuleIF
-	err = json.Unmarshal(content, &rules)
+	var ruleIFs []RuleIF
+	err = json.Unmarshal(content, &ruleIFs)
 	if err != nil {
 		return err
 	}
 
 	rs := wfw.RuleSet{}
-	for _, rule := range rules {
-		rs = append(rs, ruleIFToruleSet(rule)...)
+	for _, rif := range ruleIFs {
+		rs = append(rs, ruleIFToRuleSet(rif)...)
 	}
 
 	result := rs.Hoge(c.Join == "ip")
 
-	rules = rules[:0]
+	ruleIFs = ruleIFs[:0]
 	for _, r := range result {
 		name := r.Name
 
@@ -113,59 +113,59 @@ func (c globalCmd) Run(args []string) error {
 		if r.IP.Start.Equal(r.IP.End) {
 			rif.IPs = StringifySeq(r.IP.Start)
 		}
-		rules = append(rules, rif)
+		ruleIFs = append(ruleIFs, rif)
 	}
 
 	if c.Join == "ip" {
 		// fix Ports, join IPs
-		for i := len(rules) - 2; i >= 0; i-- {
-			for k := i + 1; k < len(rules); k++ {
-				if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
-					rules[k].Ports == rules[i].Ports {
+		for i := len(ruleIFs) - 2; i >= 0; i-- {
+			for k := i + 1; k < len(ruleIFs); k++ {
+				if ruleIFs[k].Name == ruleIFs[i].Name && ruleIFs[k].Desc == ruleIFs[i].Desc && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+					ruleIFs[k].Ports == ruleIFs[i].Ports {
 					//
-					rules[i].IPs += "," + rules[k].IPs
-					rules = append(rules[:k], rules[k+1:]...)
+					ruleIFs[i].IPs += "," + ruleIFs[k].IPs
+					ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
 				}
 			}
 		}
 		// fix IPs, join Ports
-		for i := len(rules) - 2; i >= 0; i-- {
-			for k := i + 1; k < len(rules); k++ {
-				if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
-					rules[k].IPs == rules[i].IPs {
+		for i := len(ruleIFs) - 2; i >= 0; i-- {
+			for k := i + 1; k < len(ruleIFs); k++ {
+				if ruleIFs[k].Name == ruleIFs[i].Name && ruleIFs[k].Desc == ruleIFs[i].Desc && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+					ruleIFs[k].IPs == ruleIFs[i].IPs {
 					//
-					rules[i].Ports += "," + rules[k].Ports
-					rules = append(rules[:k], rules[k+1:]...)
+					ruleIFs[i].Ports += "," + ruleIFs[k].Ports
+					ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
 				}
 			}
 		}
 	} else {
 		// fix Ports, join IPs
-		for i := len(rules) - 2; i >= 0; i-- {
-			for k := i + 1; k < len(rules); k++ {
-				if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
-					rules[k].Ports == rules[i].Ports {
+		for i := len(ruleIFs) - 2; i >= 0; i-- {
+			for k := i + 1; k < len(ruleIFs); k++ {
+				if ruleIFs[k].Name == ruleIFs[i].Name && ruleIFs[k].Desc == ruleIFs[i].Desc && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+					ruleIFs[k].Ports == ruleIFs[i].Ports {
 					//
-					rules[i].IPs += "," + rules[k].IPs
-					rules = append(rules[:k], rules[k+1:]...)
+					ruleIFs[i].IPs += "," + ruleIFs[k].IPs
+					ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
 				}
 			}
 		}
 		// fix IPs, join Ports
-		for i := len(rules) - 2; i >= 0; i-- {
-			for k := i + 1; k < len(rules); k++ {
-				if rules[k].Name == rules[i].Name && rules[k].Desc == rules[i].Desc && rules[k].Protocol == rules[i].Protocol && rules[k].Allow == rules[i].Allow &&
-					rules[k].IPs == rules[i].IPs {
+		for i := len(ruleIFs) - 2; i >= 0; i-- {
+			for k := i + 1; k < len(ruleIFs); k++ {
+				if ruleIFs[k].Name == ruleIFs[i].Name && ruleIFs[k].Desc == ruleIFs[i].Desc && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+					ruleIFs[k].IPs == ruleIFs[i].IPs {
 					//
-					rules[i].Ports += "," + rules[k].Ports
-					rules = append(rules[:k], rules[k+1:]...)
+					ruleIFs[i].Ports += "," + ruleIFs[k].Ports
+					ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
 				}
 			}
 		}
 	}
 
 	if c.Format == "json" {
-		content, err := json.MarshalIndent(rules, "", "  ")
+		content, err := json.MarshalIndent(ruleIFs, "", "  ")
 		if err != nil {
 			return err
 		}
@@ -175,29 +175,29 @@ func (c globalCmd) Run(args []string) error {
 		return nil
 	}
 
-	for _, r := range rules {
+	for _, rif := range ruleIFs {
 		if c.Format == "cmd" {
 			var enabled string
 			if !c.Enabled {
 				enabled = "enable=no"
 			}
 
-			name := "name=\"" + r.Name + "\""
+			name := "name=\"" + rif.Name + "\""
 			action := "action="
-			if r.Allow {
+			if rif.Allow {
 				action += "allow"
 			} else {
 				action += "block"
 			}
 
 			var description string
-			if len(r.Desc) != 0 {
-				description = "description=\"" + r.Desc + "\""
+			if len(rif.Desc) != 0 {
+				description = "description=\"" + rif.Desc + "\""
 			}
 
-			remoteip := "remoteip=\"" + r.IPs + "\""
-			localport := "localport=\"" + r.Ports + "\""
-			protocol := "protocol=\"" + strings.ToLower(r.Protocol) + "\""
+			remoteip := "remoteip=\"" + rif.IPs + "\""
+			localport := "localport=\"" + rif.Ports + "\""
+			protocol := "protocol=\"" + strings.ToLower(rif.Protocol) + "\""
 
 			if protocol != "protocol=\"tcp\"" && protocol != "protocol=\"udp\"" {
 				localport = ""
@@ -215,7 +215,7 @@ func (c globalCmd) Run(args []string) error {
 			)
 		} else {
 			var action string
-			if r.Allow {
+			if rif.Allow {
 				action = "allow"
 			} else {
 				action = "BLOCK"
@@ -228,12 +228,12 @@ func (c globalCmd) Run(args []string) error {
 					"Protocol: %[4]s\n"+
 					"Port: %[5]s\n"+
 					"IP: %[6]s\n",
-				r.Name,
-				r.Desc,
+				rif.Name,
+				rif.Desc,
 				action,
-				r.Protocol,
-				r.Ports,
-				r.IPs,
+				rif.Protocol,
+				rif.Ports,
+				rif.IPs,
 			)
 		}
 	}
@@ -309,7 +309,7 @@ func StringifySeq(s rng.Sequential) string {
 	return ""
 }
 
-func ruleIFToruleSet(rif RuleIF) wfw.RuleSet {
+func ruleIFToRuleSet(rif RuleIF) wfw.RuleSet {
 	var rs wfw.RuleSet
 
 	for _, p := range strings.Split(rif.Ports, ",") {
