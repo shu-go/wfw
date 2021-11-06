@@ -263,24 +263,32 @@ func (c genCmd) Run() error {
 
 	rules := []RuleIF{
 		{
-			Name:     "allow HTTP",
+			Name:     "allow HTTPS",
 			Desc:     "1st priority",
 			Protocol: "TCP",
 			Allow:    true,
-			Ports:    "80",
+			Ports:    "445",
+			IPs:      "192.168.0.1-192.168.255.255",
+		},
+		{
+			Name:     "allow HTTP from .0.101",
+			Desc:     "2nd priority",
+			Protocol: "TCP",
+			Allow:    true,
+			Ports:    "80,445,8080",
 			IPs:      "192.168.0.101",
 		},
 		{
-			Name:     "ban all 192.168",
-			Desc:     "2nd priority",
+			Name:     "deny 192.168.",
+			Desc:     "3rd priority",
 			Protocol: "TCP",
 			Allow:    false,
 			Ports:    "0-65535",
 			IPs:      "192.168.0.1-192.168.255.255",
 		},
 		{
-			Name:     "ban all 192.168",
-			Desc:     "3rd priority, this rule will be disappeared",
+			Name:     "allow RDP from .0.101",
+			Desc:     "4th priority, this rule will be disappeared",
 			Protocol: "TCP",
 			Allow:    true,
 			Ports:    "3389",
