@@ -72,12 +72,12 @@ func (c globalCmd) Run(args []string) error {
 		return err
 	}
 
-	rs := wfw.RuleSet{}
+	inRS := wfw.RuleSet{}
 	for _, rif := range ruleIFs {
-		rs = append(rs, ruleIFToRuleSet(rif)...)
+		inRS = append(inRS, ruleIFToRuleSet(rif)...)
 	}
 
-	result := rs.Hoge(c.Join == "ip")
+	result := inRS.Hoge(c.Join == "ip")
 
 	ruleIFs = ruleIFs[:0]
 	for _, r := range result {
