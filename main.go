@@ -607,7 +607,7 @@ func ruleIFToRuleSet(rif RuleIF) wfw.RuleSet {
 func main() {
 	app := gli.NewWith(&globalCmd{})
 	app.Name = "wfw"
-	app.Desc = "generates Windows Fiirewall (netsh advfirewall) commands from JSON rules"
+	app.Desc = "generates Windows Firewall (netsh advfirewall) commands from JSON rules"
 	app.Version = Version
 	app.Usage = `wfw gen
 wfw example.json
