@@ -613,6 +613,7 @@ func main() {
 wfw example.json
 wfw --format cmd example.json`
 	app.Copyright = "(C) 2021 Shuhei Kubota"
+	app.SuppressErrorOutput = true
 	err := app.Run(os.Args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
