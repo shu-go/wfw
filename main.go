@@ -281,11 +281,11 @@ rect:hover{stroke:green}
 
 			for y, p := range ips {
 				ip := fmt.Sprintf("%v", p)
-				canvas.Text(0, topMargin+y*cellSize+fontSize, ip, "font-size:"+strconv.Itoa(fontSize)+"px")
+				canvas.Text(0, topMargin+y*cellSize+cellSize/2, ip, "font-size:"+strconv.Itoa(fontSize)+"px; dominant-baseline:central")
 			}
 			for x, p := range ports {
 				port := fmt.Sprintf("%v", p)
-				canvas.Text(leftMargin+x*cellSize, topMargin, port, "font-size:"+strconv.Itoa(fontSize)+"px")
+				canvas.Text(leftMargin+x*cellSize+cellSize/2, topMargin, port, "font-size:"+strconv.Itoa(fontSize)+"px; text-anchor:middle")
 			}
 
 			// info
