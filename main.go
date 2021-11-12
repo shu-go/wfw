@@ -268,8 +268,9 @@ func (c globalCmd) Run(args []string) error {
 			canvas.Start(width, height)
 
 			canvas.Style("text/css", `rect.allow{fill:lightblue}
-rect.block{fill:red}
-rect.onmouse{fill:yellow}
+rect.block{fill:darkred}
+rect.allow.onmouse{fill:lightcyan}
+rect.block.onmouse{fill:red}
 rect:hover{stroke:green}
 @media (prefers-color-scheme: dark) {
     :root {
