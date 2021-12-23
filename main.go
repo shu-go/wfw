@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -417,6 +418,11 @@ rect:hover{stroke:green}
 		return nil
 	}
 
+	newline, err := regexp.Compile(`\r\n|\r|\n`)
+	if err != nil {
+		return err
+	}
+
 	for _, rif := range ruleIFs {
 		if c.Format == "cmd" {
 			var enabled string
@@ -424,7 +430,7 @@ rect:hover{stroke:green}
 				enabled = "enable=no"
 			}
 
-			name := "name=\"" + rif.Name + "\""
+			name := "name=\"" + newline.ReplaceAllLiteralString(rif.Name, " ") + "\""
 			action := "action="
 			if rif.Allow {
 				action += "allow"
@@ -434,7 +440,7 @@ rect:hover{stroke:green}
 
 			var description string
 			if len(rif.Desc) != 0 {
-				description = "description=\"" + rif.Desc + "\""
+				description = "description=\"" + newline.ReplaceAllLiteralString(rif.Desc, " ") + "\""
 			}
 
 			remoteip := "remoteip=\"" + rif.IPs + "\""
