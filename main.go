@@ -86,6 +86,9 @@ func (c globalCmd) Run(args []string) error {
 
 	inRS := wfw.RuleSet{}
 	for _, rif := range inRuleIFs {
+		if strings.HasPrefix(rif.Name, "#") {
+			continue
+		}
 		inRS = append(inRS, ruleIFToRuleSet(rif)...)
 	}
 
