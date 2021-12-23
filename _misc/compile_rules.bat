@@ -16,10 +16,13 @@ echo.
 echo.        ^<script charset="utf-8"^>
 echo.            window.addEventListener^('DOMContentLoaded', ^(event^) ^=^> {
 echo.                let s = document.getElementById^("s"^);
-echo.                s.addEventListener^("change", ^(event^) =^> {
+echo.                let p = document.getElementById^("p"^);
+echo.                let h = function^(event^) {
 echo.                    let o = document.getElementById^("o"^)
-echo.                    if ^(s.value==""^) {o.data=""} else {o.data = "svg/"+s.value+"_TCP.svg"}
-echo.                }^)
+echo.                    if ^(s.value==""^) {o.data=""} else {o.data = "svg/"+s.value+"_"+p.value+".svg"}
+echo.                }
+echo.                s.addEventListener^("change", h^)
+echo.                p.addEventListener^("change", h^)
 echo.            }^)
 echo.            
 echo.        ^</script^>
@@ -40,6 +43,11 @@ for %%i in (*.json) do (
 )
 
 (
+echo.            ^</select^>
+echo.            
+echo.            ^<select id="p" style="font-size:xx-large"^>
+echo.            ^<option value="TCP" selected^>TCP^</option^>
+echo.            ^<option value="UDP"^>UDP^</option^>
 echo.            ^</select^>
 echo.        ^</form^>
 echo.
