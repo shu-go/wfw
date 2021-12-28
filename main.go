@@ -94,95 +94,9 @@ func (c globalCmd) Run(args []string) error {
 
 	result := inRS.Hoge(c.Join == "ip")
 
-	var ruleIFs []RuleIF
-	for _, r := range result {
-		name := r.Name
+	ruleIFs := ruleIFsFromRuleSet(result, c.Except, inRuleIFs)
 
-		if c.Except != "" {
-			if len(r.Excepts) > 0 {
-				names := make([]string, 0, len(r.Excepts))
-				for t, v := range r.Excepts {
-					nm := ""
-					if t < len(inRuleIFs) {
-						nm = inRuleIFs[t].Name
-					}
-
-					if v.IP && v.Port {
-						names = append(names, nm)
-					} else if v.IP {
-						names = append(names, "IP of "+nm)
-					} else {
-						names = append(names, "Port of "+nm)
-					}
-				}
-				name += strings.Replace(c.Except, "%", strings.Join(names, ", "), 1)
-			}
-		}
-
-		rif := RuleIF{
-			Name:     name, //r.Name,
-			Desc:     r.Desc,
-			Protocol: r.Protocol,
-			Allow:    r.Allow,
-			Ports:    StringifySeq(r.Port.Start) + "-" + StringifySeq(r.Port.End),
-			IPs:      StringifySeq(r.IP.Start) + "-" + StringifySeq(r.IP.End),
-		}
-		if r.Port.Start.Equal(r.Port.End) {
-			rif.Ports = StringifySeq(r.Port.Start)
-		}
-		if r.IP.Start.Equal(r.IP.End) {
-			rif.IPs = StringifySeq(r.IP.Start)
-		}
-		ruleIFs = append(ruleIFs, rif)
-	}
-
-	if c.Join == "ip" {
-		// fix Ports, join IPs
-		for i := len(ruleIFs) - 2; i >= 0; i-- {
-			for k := i + 1; k < len(ruleIFs); k++ {
-				if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
-					ruleIFs[k].Ports == ruleIFs[i].Ports {
-					//
-					ruleIFs[i].IPs += "," + ruleIFs[k].IPs
-					ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
-				}
-			}
-		}
-		// fix IPs, join Ports
-		for i := len(ruleIFs) - 2; i >= 0; i-- {
-			for k := i + 1; k < len(ruleIFs); k++ {
-				if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
-					ruleIFs[k].IPs == ruleIFs[i].IPs {
-					//
-					ruleIFs[i].Ports += "," + ruleIFs[k].Ports
-					ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
-				}
-			}
-		}
-	} else {
-		// fix Ports, join IPs
-		for i := len(ruleIFs) - 2; i >= 0; i-- {
-			for k := i + 1; k < len(ruleIFs); k++ {
-				if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
-					ruleIFs[k].Ports == ruleIFs[i].Ports {
-					//
-					ruleIFs[i].IPs += "," + ruleIFs[k].IPs
-					ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
-				}
-			}
-		}
-		// fix IPs, join Ports
-		for i := len(ruleIFs) - 2; i >= 0; i-- {
-			for k := i + 1; k < len(ruleIFs); k++ {
-				if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
-					ruleIFs[k].IPs == ruleIFs[i].IPs {
-					//
-					ruleIFs[i].Ports += "," + ruleIFs[k].Ports
-					ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
-				}
-			}
-		}
-	}
+	joinRuleIFs(&ruleIFs, c.Join)
 
 	if c.Format == "json" {
 		content, err := json.MarshalIndent(ruleIFs, "", "  ")
@@ -196,230 +110,14 @@ func (c globalCmd) Run(args []string) error {
 	}
 
 	if c.SVG != "" {
-		protocolSet := make(map[string]struct{})
-		portSet := make(map[rng.Int]struct{})
-		ipSet := make(map[rng.IPv4]struct{})
-
-		rs := wfw.RuleSet{}
-		for i := range ruleIFs {
-			// set tag based on a result rule set
-			ruleIFs[i].tag = i
-
-			// convert from []RuleIF to RuleSet back again
-			rsrs := ruleIFToRuleSet(ruleIFs[i])
-
-			for _, r := range rsrs {
-				// scan ports and ips
-				portSet[r.Port.Start.(rng.Int)] = struct{}{}
-				portSet[r.Port.End.(rng.Int)] = struct{}{}
-				ipSet[r.IP.Start.(rng.IPv4)] = struct{}{}
-				ipSet[r.IP.End.(rng.IPv4)] = struct{}{}
-				protocolSet[r.Protocol] = struct{}{}
-			}
-
-			rs = append(rs, rsrs...)
+		err := saveAsSVG(ruleIFs, c.SVG, c.SVGNameFormat)
+		if err != nil {
+			return err
 		}
-
-		var ports []rng.Int
-		for p := range portSet {
-			ports = append(ports, p)
-		}
-		sort.Slice(ports, func(i, j int) bool {
-			return ports[i].Less(ports[j])
-		})
-
-		var ips []rng.IPv4
-		for i := range ipSet {
-			ips = append(ips, i)
-		}
-		sort.Slice(ips, func(i, j int) bool {
-			return ips[i].Less(ips[j])
-		})
-
-		const leftMargin = 120
-		const topMargin = 50
-		const cellSize = 50
-		const fontSize = 12
-
-		width := leftMargin + len(ports)*cellSize
-		height := topMargin + len(ips)*cellSize + fontSize*5
-
-		wk := make(wfw.RuleSet, 0, len(rs))
-		for protocol := range protocolSet {
-			wk = wk[:0]
-			for i := range rs {
-				if rs[i].Protocol == protocol {
-					wk = append(wk, rs[i])
-				}
-			}
-
-			var file *os.File
-			var canvas *svg.SVG
-			if c.SVG == "stdout" {
-				canvas = svg.New(os.Stdout)
-			} else {
-				name := strings.Replace(c.SVGNameFormat, "%", c.SVG, -1)
-				name = strings.Replace(name, "{protocol}", protocol, -1)
-
-				var err error
-				file, err = os.Create(name)
-				if err != nil {
-					return err
-				}
-
-				canvas = svg.New(file)
-			}
-			canvas.Start(width, height)
-
-			canvas.Style("text/css", `rect.allow{fill:lightblue}
-rect.block{fill:darkred}
-rect.allow.onmouse{fill:lightcyan}
-rect.block.onmouse{fill:red}
-rect:hover{stroke:green}
-@media (prefers-color-scheme: dark) {
-    :root {
-        background-color: black;
-        fill: white;
-    }
-}
-`)
-
-			for y, p := range ips {
-				ip := fmt.Sprintf("%v", p)
-				canvas.Text(0, topMargin+y*cellSize+cellSize/2, ip, "font-size:"+strconv.Itoa(fontSize)+"px; dominant-baseline:central")
-			}
-			for x, p := range ports {
-				port := fmt.Sprintf("%v", p)
-				canvas.Text(leftMargin+x*cellSize+cellSize/2, topMargin, port, "font-size:"+strconv.Itoa(fontSize)+"px; text-anchor:middle")
-			}
-
-			// info
-			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*1, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-name"`)
-			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*2, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-desc"`)
-			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*3, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-allow"`)
-			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*4, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-ip"`)
-			canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*5, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-port"`)
-
-			canvas.Translate(leftMargin, topMargin)
-
-			for i := len(wk) - 1; i >= 0; i-- {
-				left, right := 0, 0
-				for k, p := range ports {
-					if wk[i].Port.Start.Equal(p) {
-						left = k
-					}
-					if wk[i].Port.End.Equal(p) {
-						right = k
-					}
-				}
-				top, bottom := 0, 0
-				for k, p := range ips {
-					if wk[i].IP.Start.Equal(p) {
-						top = k
-					}
-					if wk[i].IP.End.Equal(p) {
-						bottom = k
-					}
-				}
-
-				basetop := i * 5 * 0
-
-				left *= cellSize
-				top *= cellSize
-				if right != 0 {
-					right = (right+1)*cellSize - 1
-				}
-				if bottom != 0 {
-					bottom = (bottom+1)*cellSize - 1
-				}
-
-				if left == right {
-					right += 10
-				}
-
-				if top == bottom {
-					bottom += 10
-				}
-
-				allowclass := "allow"
-				if !wk[i].Allow {
-					allowclass = "block"
-				}
-
-				//opacity := strconv.FormatFloat(1.0-0.01*float64(i), 'f', 1, 64)
-
-				var rif RuleIF
-				for k := range ruleIFs {
-					if ruleIFs[k].tag == wk[i].Tag {
-						rif = ruleIFs[k]
-					}
-				}
-
-				canvas.Rect(
-					left,
-					basetop+top,
-					right-left,
-					basetop+(bottom-top),
-					//"fill-opacity:"+opacity,
-					`class="rule-`+strconv.Itoa(wk[i].Tag)+` `+allowclass+` "`,
-					`wfw-name="`+rif.Name+`"`,
-					`wfw-desc="`+rif.Desc+`"`,
-					`wfw-allow="`+allowclass+`"`,
-					`wfw-ip="`+rif.IPs+`"`,
-					`wfw-port="`+rif.Ports+`"`,
-				)
-			}
-
-			canvas.Gend()
-
-			canvas.Script("text/javascript", `for (var r of document.querySelectorAll("rect")) {
-    r.addEventListener("mouseover", function() {
-        var rule = ""
-        for (var c of this.classList) {
-            if (c.startsWith("rule")) {
-                rule = c
-                break
-            }
-        }
-        if (rule=="") return
-        document.getElementsByClassName("wfw-name")[0].textContent = this.getAttribute("wfw-name")
-        document.getElementsByClassName("wfw-desc")[0].textContent = this.getAttribute("wfw-desc")
-        document.getElementsByClassName("wfw-allow")[0].textContent = this.getAttribute("wfw-allow")
-        document.getElementsByClassName("wfw-ip")[0].textContent = this.getAttribute("wfw-ip")
-        document.getElementsByClassName("wfw-port")[0].textContent = this.getAttribute("wfw-port")
-        for (var rr of document.getElementsByClassName(rule)) {
-            rr.classList.add("onmouse")
-        }
-    }, false);
-    r.addEventListener("mouseleave", function() {
-        var rule = ""
-        for (var c of this.classList) {
-            if (c.startsWith("rule")) {
-                rule = c
-                break
-            }
-        }
-        if (rule=="") return
-        document.getElementsByClassName("wfw-name")[0].textContent = ""
-        document.getElementsByClassName("wfw-desc")[0].textContent = ""
-        document.getElementsByClassName("wfw-allow")[0].textContent = ""
-        document.getElementsByClassName("wfw-ip")[0].textContent = ""
-        document.getElementsByClassName("wfw-port")[0].textContent = ""
-        for (var rr of document.getElementsByClassName(rule)) {
-            rr.classList.remove("onmouse")
-        }
-    }, false);
-}`)
-			canvas.End()
-
-			if file != nil {
-				file.Close()
-				file = nil
-			}
-		}
-
 		return nil
 	}
+
+	// c.Format is "cmd" or "list"
 
 	newline, err := regexp.Compile(`\r\n|\r|\n`)
 	if err != nil {
@@ -576,6 +274,103 @@ func StringifySeq(s rng.Sequential) string {
 	return ""
 }
 
+// origIFs is referred on building Excepts
+func ruleIFsFromRuleSet(rs wfw.RuleSet, exceptFormat string, origIFs []RuleIF) []RuleIF {
+	var ruleIFs []RuleIF
+	for _, r := range rs {
+		name := r.Name
+
+		if exceptFormat != "" {
+			if len(r.Excepts) > 0 {
+				names := make([]string, 0, len(r.Excepts))
+				for t, v := range r.Excepts {
+					nm := ""
+					if t < len(origIFs) {
+						nm = origIFs[t].Name
+					}
+
+					if v.IP && v.Port {
+						names = append(names, nm)
+					} else if v.IP {
+						names = append(names, "IP of "+nm)
+					} else {
+						names = append(names, "Port of "+nm)
+					}
+				}
+				name += strings.Replace(exceptFormat, "%", strings.Join(names, ", "), 1)
+			}
+		}
+
+		rif := RuleIF{
+			Name:     name, //r.Name,
+			Desc:     r.Desc,
+			Protocol: r.Protocol,
+			Allow:    r.Allow,
+			Ports:    StringifySeq(r.Port.Start) + "-" + StringifySeq(r.Port.End),
+			IPs:      StringifySeq(r.IP.Start) + "-" + StringifySeq(r.IP.End),
+		}
+		if r.Port.Start.Equal(r.Port.End) {
+			rif.Ports = StringifySeq(r.Port.Start)
+		}
+		if r.IP.Start.Equal(r.IP.End) {
+			rif.IPs = StringifySeq(r.IP.Start)
+		}
+		ruleIFs = append(ruleIFs, rif)
+	}
+
+	return ruleIFs
+}
+
+func joinRuleIFs(ruleIFs *[]RuleIF, join string) {
+	if join == "ip" {
+		// fix Ports, join IPs
+		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
+			for k := i + 1; k < len((*ruleIFs)); k++ {
+				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
+					(*ruleIFs)[k].Ports == (*ruleIFs)[i].Ports {
+					//
+					(*ruleIFs)[i].IPs += "," + (*ruleIFs)[k].IPs
+					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
+				}
+			}
+		}
+		// fix IPs, join Ports
+		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
+			for k := i + 1; k < len((*ruleIFs)); k++ {
+				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
+					(*ruleIFs)[k].IPs == (*ruleIFs)[i].IPs {
+					//
+					(*ruleIFs)[i].Ports += "," + (*ruleIFs)[k].Ports
+					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
+				}
+			}
+		}
+	} else {
+		// fix Ports, join IPs
+		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
+			for k := i + 1; k < len((*ruleIFs)); k++ {
+				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
+					(*ruleIFs)[k].Ports == (*ruleIFs)[i].Ports {
+					//
+					(*ruleIFs)[i].IPs += "," + (*ruleIFs)[k].IPs
+					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
+				}
+			}
+		}
+		// fix IPs, join Ports
+		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
+			for k := i + 1; k < len((*ruleIFs)); k++ {
+				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
+					(*ruleIFs)[k].IPs == (*ruleIFs)[i].IPs {
+					//
+					(*ruleIFs)[i].Ports += "," + (*ruleIFs)[k].Ports
+					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
+				}
+			}
+		}
+	}
+}
+
 func ruleIFToRuleSet(rif RuleIF) wfw.RuleSet {
 	var rs wfw.RuleSet
 
@@ -612,6 +407,232 @@ func ruleIFToRuleSet(rif RuleIF) wfw.RuleSet {
 	}
 
 	return rs
+}
+
+func saveAsSVG(ruleIFs []RuleIF, dest, nameFormat string) error {
+	protocolSet := make(map[string]struct{})
+	portSet := make(map[rng.Int]struct{})
+	ipSet := make(map[rng.IPv4]struct{})
+
+	rs := wfw.RuleSet{}
+	for i := range ruleIFs {
+		// set tag based on a result rule set
+		ruleIFs[i].tag = i
+
+		// convert from []RuleIF to RuleSet back again
+		rsrs := ruleIFToRuleSet(ruleIFs[i])
+
+		for _, r := range rsrs {
+			// scan ports and ips
+			portSet[r.Port.Start.(rng.Int)] = struct{}{}
+			portSet[r.Port.End.(rng.Int)] = struct{}{}
+			ipSet[r.IP.Start.(rng.IPv4)] = struct{}{}
+			ipSet[r.IP.End.(rng.IPv4)] = struct{}{}
+			protocolSet[r.Protocol] = struct{}{}
+		}
+
+		rs = append(rs, rsrs...)
+	}
+
+	var ports []rng.Int
+	for p := range portSet {
+		ports = append(ports, p)
+	}
+	sort.Slice(ports, func(i, j int) bool {
+		return ports[i].Less(ports[j])
+	})
+
+	var ips []rng.IPv4
+	for i := range ipSet {
+		ips = append(ips, i)
+	}
+	sort.Slice(ips, func(i, j int) bool {
+		return ips[i].Less(ips[j])
+	})
+
+	const leftMargin = 120
+	const topMargin = 50
+	const cellSize = 50
+	const fontSize = 12
+
+	width := leftMargin + len(ports)*cellSize
+	height := topMargin + len(ips)*cellSize + fontSize*5
+
+	wk := make(wfw.RuleSet, 0, len(rs))
+	for protocol := range protocolSet {
+		wk = wk[:0]
+		for i := range rs {
+			if rs[i].Protocol == protocol {
+				wk = append(wk, rs[i])
+			}
+		}
+
+		var file *os.File
+		var canvas *svg.SVG
+		if dest == "stdout" {
+			canvas = svg.New(os.Stdout)
+		} else {
+			name := strings.Replace(nameFormat, "%", dest, -1)
+			name = strings.Replace(name, "{protocol}", protocol, -1)
+
+			var err error
+			file, err = os.Create(name)
+			if err != nil {
+				return err
+			}
+
+			canvas = svg.New(file)
+		}
+		canvas.Start(width, height)
+
+		canvas.Style("text/css", `rect.allow{fill:lightblue}
+rect.block{fill:darkred}
+rect.allow.onmouse{fill:lightcyan}
+rect.block.onmouse{fill:red}
+rect:hover{stroke:green}
+@media (prefers-color-scheme: dark) {
+    :root {
+        background-color: black;
+        fill: white;
+    }
+}
+`)
+
+		for y, p := range ips {
+			ip := fmt.Sprintf("%v", p)
+			canvas.Text(0, topMargin+y*cellSize+cellSize/2, ip, "font-size:"+strconv.Itoa(fontSize)+"px; dominant-baseline:central")
+		}
+		for x, p := range ports {
+			port := fmt.Sprintf("%v", p)
+			canvas.Text(leftMargin+x*cellSize+cellSize/2, topMargin, port, "font-size:"+strconv.Itoa(fontSize)+"px; text-anchor:middle")
+		}
+
+		// info
+		canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*1, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-name"`)
+		canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*2, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-desc"`)
+		canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*3, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-allow"`)
+		canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*4, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-ip"`)
+		canvas.Text(leftMargin, topMargin+len(ips)*cellSize+fontSize*5, "", "font-size:"+strconv.Itoa(fontSize)+"px", `class="wfw-port"`)
+
+		canvas.Translate(leftMargin, topMargin)
+
+		for i := len(wk) - 1; i >= 0; i-- {
+			left, right := 0, 0
+			for k, p := range ports {
+				if wk[i].Port.Start.Equal(p) {
+					left = k
+				}
+				if wk[i].Port.End.Equal(p) {
+					right = k
+				}
+			}
+			top, bottom := 0, 0
+			for k, p := range ips {
+				if wk[i].IP.Start.Equal(p) {
+					top = k
+				}
+				if wk[i].IP.End.Equal(p) {
+					bottom = k
+				}
+			}
+
+			basetop := i * 5 * 0
+
+			left *= cellSize
+			top *= cellSize
+			if right != 0 {
+				right = (right+1)*cellSize - 1
+			}
+			if bottom != 0 {
+				bottom = (bottom+1)*cellSize - 1
+			}
+
+			if left == right {
+				right += 10
+			}
+
+			if top == bottom {
+				bottom += 10
+			}
+
+			allowclass := "allow"
+			if !wk[i].Allow {
+				allowclass = "block"
+			}
+
+			//opacity := strconv.FormatFloat(1.0-0.01*float64(i), 'f', 1, 64)
+
+			var rif RuleIF
+			for k := range ruleIFs {
+				if ruleIFs[k].tag == wk[i].Tag {
+					rif = ruleIFs[k]
+				}
+			}
+
+			canvas.Rect(
+				left,
+				basetop+top,
+				right-left,
+				basetop+(bottom-top),
+				//"fill-opacity:"+opacity,
+				`class="rule-`+strconv.Itoa(wk[i].Tag)+` `+allowclass+` "`,
+				`wfw-name="`+rif.Name+`"`,
+				`wfw-desc="`+rif.Desc+`"`,
+				`wfw-allow="`+allowclass+`"`,
+				`wfw-ip="`+rif.IPs+`"`,
+				`wfw-port="`+rif.Ports+`"`,
+			)
+		}
+
+		canvas.Gend()
+
+		canvas.Script("text/javascript", `for (var r of document.querySelectorAll("rect")) {
+    r.addEventListener("mouseover", function() {
+        var rule = ""
+        for (var c of this.classList) {
+            if (c.startsWith("rule")) {
+                rule = c
+                break
+            }
+        }
+        if (rule=="") return
+        document.getElementsByClassName("wfw-name")[0].textContent = this.getAttribute("wfw-name")
+        document.getElementsByClassName("wfw-desc")[0].textContent = this.getAttribute("wfw-desc")
+        document.getElementsByClassName("wfw-allow")[0].textContent = this.getAttribute("wfw-allow")
+        document.getElementsByClassName("wfw-ip")[0].textContent = this.getAttribute("wfw-ip")
+        document.getElementsByClassName("wfw-port")[0].textContent = this.getAttribute("wfw-port")
+        for (var rr of document.getElementsByClassName(rule)) {
+            rr.classList.add("onmouse")
+        }
+    }, false);
+    r.addEventListener("mouseleave", function() {
+        var rule = ""
+        for (var c of this.classList) {
+            if (c.startsWith("rule")) {
+                rule = c
+                break
+            }
+        }
+        if (rule=="") return
+        document.getElementsByClassName("wfw-name")[0].textContent = ""
+        document.getElementsByClassName("wfw-desc")[0].textContent = ""
+        document.getElementsByClassName("wfw-allow")[0].textContent = ""
+        document.getElementsByClassName("wfw-ip")[0].textContent = ""
+        document.getElementsByClassName("wfw-port")[0].textContent = ""
+        for (var rr of document.getElementsByClassName(rule)) {
+            rr.classList.remove("onmouse")
+        }
+    }, false);
+}`)
+		canvas.End()
+
+		if file != nil {
+			file.Close()
+			file = nil
+		}
+	}
+
+	return nil
 }
 
 func main() {
