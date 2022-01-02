@@ -205,7 +205,7 @@ func (c genCmd) Run() error {
 			Desc:     "1st priority",
 			Protocol: "TCP",
 			Allow:    true,
-			Ports:    "445",
+			Ports:    "443",
 			IPs:      "192.168.0.1-192.168.255.255",
 		},
 		{
@@ -213,7 +213,7 @@ func (c genCmd) Run() error {
 			Desc:     "2nd priority",
 			Protocol: "TCP",
 			Allow:    true,
-			Ports:    "80,445,8080",
+			Ports:    "80,443,8080",
 			IPs:      "192.168.0.101",
 		},
 		{
