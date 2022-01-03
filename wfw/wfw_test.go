@@ -154,7 +154,7 @@ func TestCorner(t *testing.T) {
 		Allow:    true,
 		Protocol: "TCP",
 		Port:     rng.NewRange(rng.Int(150), rng.Int(200)),
-		IP:       rng.NewRange(rng.IPv4{192, 168, 201, 1}, rng.IPv4{192, 168, 211, 100}),
+		IP:       rng.NewRange(rng.IPv4{192, 168, 201, 0}, rng.IPv4{192, 168, 211, 100}),
 	})
 	gotwant.Test(t, rsrs[2], wfw.Rule{
 		Allow:    true,
