@@ -44,8 +44,8 @@ type globalCmd struct {
 
 type RuleIF struct {
 	Name, Desc string
-	Protocol   string
 	Allow      bool
+	Protocol   string
 	Ports      string `json:"Port"`
 	IPs        string `json:"IP"`
 	tag        int
@@ -203,40 +203,40 @@ func (c genCmd) Run() error {
 		{
 			Name:     "allow HTTPS",
 			Desc:     "1st priority",
-			Protocol: "TCP",
 			Allow:    true,
+			Protocol: "TCP",
 			Ports:    "443",
 			IPs:      "192.168.0.1-192.168.255.255",
 		},
 		{
 			Name:     "allow HTTP from .0.101",
 			Desc:     "2nd priority",
-			Protocol: "TCP",
 			Allow:    true,
+			Protocol: "TCP",
 			Ports:    "80,443,8080",
 			IPs:      "192.168.0.101",
 		},
 		{
 			Name:     "deny TCP from 192.168.",
 			Desc:     "3rd priority",
-			Protocol: "TCP",
 			Allow:    false,
+			Protocol: "TCP",
 			Ports:    "0-65535",
 			IPs:      "192.168.0.1-192.168.255.255",
 		},
 		{
 			Name:     "deny UDP from 192.168.",
 			Desc:     "3rd priority",
-			Protocol: "UDP",
 			Allow:    false,
+			Protocol: "UDP",
 			Ports:    "0-65535",
 			IPs:      "192.168.0.1-192.168.255.255",
 		},
 		{
 			Name:     "allow RDP from .0.101",
 			Desc:     "4th priority, this rule will be disappeared",
-			Protocol: "TCP",
 			Allow:    true,
+			Protocol: "TCP",
 			Ports:    "3389",
 			IPs:      "192.168.0.101",
 		},
