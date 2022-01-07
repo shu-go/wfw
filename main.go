@@ -346,17 +346,6 @@ func joinRuleIFs(ruleIFs *[]RuleIF, join string) {
 			}
 		}
 	} else {
-		// fix Ports, join IPs
-		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
-			for k := i + 1; k < len((*ruleIFs)); k++ {
-				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
-					(*ruleIFs)[k].Ports == (*ruleIFs)[i].Ports {
-					//
-					(*ruleIFs)[i].IPs += "," + (*ruleIFs)[k].IPs
-					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
-				}
-			}
-		}
 		// fix IPs, join Ports
 		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
 			for k := i + 1; k < len((*ruleIFs)); k++ {
@@ -364,6 +353,17 @@ func joinRuleIFs(ruleIFs *[]RuleIF, join string) {
 					(*ruleIFs)[k].IPs == (*ruleIFs)[i].IPs {
 					//
 					(*ruleIFs)[i].Ports += "," + (*ruleIFs)[k].Ports
+					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
+				}
+			}
+		}
+		// fix Ports, join IPs
+		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
+			for k := i + 1; k < len((*ruleIFs)); k++ {
+				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
+					(*ruleIFs)[k].Ports == (*ruleIFs)[i].Ports {
+					//
+					(*ruleIFs)[i].IPs += "," + (*ruleIFs)[k].IPs
 					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
 				}
 			}
