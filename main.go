@@ -60,6 +60,7 @@ func (c globalCmd) Run(args []string) error {
 		c.Input = args[0]
 	}
 
+	c.Aggregation = strings.ToLower(c.Aggregation)
 	if c.Aggregation != "ip" && c.Aggregation != "port" {
 		return errors.New("--aggregation must be ip or port")
 	}
