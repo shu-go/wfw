@@ -29,7 +29,8 @@ func init() {
 
 type globalCmd struct {
 	Input string `cli:"input,i" help:"rule file. use 'wfw gen' to generate example.json"`
-	Join  string `cli:"join,j" default:"ip" help:"combine [ip,port]s with the same range as much as possible"`
+
+	Aggregation string `cli:"aggretation,a"  default:"ip"  help:"aggretates by [ip,port] first"`
 
 	Format  string `cli:"format,f" help:"{list,json,cmd}" default:"list"`
 	Enabled bool   `cli:"enabled" help:"if --format=cmd" default:"no"`
@@ -59,8 +60,8 @@ func (c globalCmd) Run(args []string) error {
 		c.Input = args[0]
 	}
 
-	if c.Join != "ip" && c.Join != "port" {
-		return errors.New("--join must be ip or port")
+	if c.Aggregation != "ip" && c.Aggregation != "port" {
+		return errors.New("--aggregation must be ip or port")
 	}
 
 	file, err := os.Open(c.Input)
@@ -92,11 +93,11 @@ func (c globalCmd) Run(args []string) error {
 		inRS = append(inRS, ruleIFToRuleSet(rif)...)
 	}
 
-	result := inRS.Hoge(c.Join == "ip")
+	result := inRS.Hoge(c.Aggregation == "port")
 
 	ruleIFs := ruleIFsFromRuleSet(result, c.Except, inRuleIFs)
 
-	joinRuleIFs(&ruleIFs, c.Join)
+	joinRuleIFs(&ruleIFs, c.Aggregation)
 
 	if c.Format == "json" {
 		content, err := json.MarshalIndent(ruleIFs, "", "  ")
@@ -321,8 +322,8 @@ func ruleIFsFromRuleSet(rs wfw.RuleSet, exceptFormat string, origIFs []RuleIF) [
 	return ruleIFs
 }
 
-func joinRuleIFs(ruleIFs *[]RuleIF, join string) {
-	if join == "ip" {
+func joinRuleIFs(ruleIFs *[]RuleIF, aggregation string) {
+	if aggregation == "ip" {
 		// fix Ports, join IPs
 		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
 			for k := i + 1; k < len((*ruleIFs)); k++ {
