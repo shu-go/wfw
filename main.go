@@ -31,7 +31,7 @@ func init() {
 type globalCmd struct {
 	Input string `cli:"input,i" help:"rule file. use 'wfw gen' to generate example.json"`
 
-	Aggregation string `cli:"aggretation,a"  default:"ip"  help:"aggretates by [ip,port] first"`
+	Aggregation string `cli:"aggregation,a"  default:"ip"  help:"aggregates by [ip,port] first"`
 
 	Format  string `cli:"format,f" help:"{list,json,cmd,svg}" default:"list"`
 	Enabled bool   `cli:"enabled" help:"if --format=cmd" default:"no"`
@@ -332,7 +332,7 @@ func ruleIFsFromRuleSet(rs wfw.RuleSet, exceptFormat string, origIFs []RuleIF) [
 }
 
 func joinRuleIFs(ruleIFs *[]RuleIF, aggregation string) {
-	if aggregation == "ip" {
+	if aggregation == "port" {
 		// fix Ports, join IPs
 		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
 			for k := i + 1; k < len((*ruleIFs)); k++ {
