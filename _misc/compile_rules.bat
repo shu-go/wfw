@@ -38,7 +38,7 @@ for %%i in (*.json) do (
     @set a=!a:.json=!
     echo !a!
     echo ^<option value="!a!"^>!a!^</option^> >> view_svg.html
-    wfw -i %%i --svg svg\!a!
+    wfw -i %%i --format svg --svg-dir svg --svg-name-format %%_{protocol}.svg
     wfw -i %%i --format cmd >cmd\!a!.bat
 )
 
