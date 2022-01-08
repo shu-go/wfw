@@ -18,8 +18,6 @@ github.com/shu-go/gli v1.3.1/go.mod h1:2g2MUqtarGLk4QHQ5HdRIJvxRwB/ZMlh0wPrZboKY
 github.com/shu-go/gotwant v0.0.0-20190822031422-724391433f13/go.mod h1:UxvcvxZEQUBw6lS9UgXOPh1outjvx2+bvDlEOpCTuGo=
 github.com/shu-go/gotwant v0.0.0-20190920074605-851c8677556b h1:HZZDo+sGck6gpa2lzY9rLVuatZwm6Q7qr59R3fZTeIk=
 github.com/shu-go/gotwant v0.0.0-20190920074605-851c8677556b/go.mod h1:FZepfqvib0mXjHiaQPTv0RUD5QMpMA/FHLfBQjZRRQg=
-github.com/shu-go/rng v0.2.0 h1:L+flC8lzQwQqI/9R0CpletS0dtIt1f9bZL5MXcDLsvo=
-github.com/shu-go/rng v0.2.0/go.mod h1:67MPeN3KEcUR0a4KxWlg7DcbsjfQLakZqI8Zqhfg1ng=
 github.com/shu-go/rng v0.2.1 h1:B+MTv8BdP+aLFYKmttYk0npsmBGdMO7ZscsUhw+CNyk=
 github.com/shu-go/rng v0.2.1/go.mod h1:67MPeN3KEcUR0a4KxWlg7DcbsjfQLakZqI8Zqhfg1ng=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
