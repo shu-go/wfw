@@ -64,6 +64,11 @@ func (c globalCmd) Run(args []string) error {
 		return errors.New("--aggregation must be ip or port")
 	}
 
+	c.Format = strings.ToLower(c.Format)
+	if c.Format != "list" && c.Format != "json" && c.Format != "cmd" && c.Format != "svg" {
+		return errors.New("--format must be list,json,cmd or svg")
+	}
+
 	file, err := os.Open(c.Input)
 	if err != nil {
 		return err
