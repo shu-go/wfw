@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -32,10 +33,9 @@ type globalCmd struct {
 
 	Aggregation string `cli:"aggretation,a"  default:"ip"  help:"aggretates by [ip,port] first"`
 
-	Format  string `cli:"format,f" help:"{list,json,cmd}" default:"list"`
+	Format  string `cli:"format,f" help:"{list,json,cmd,svg}" default:"list"`
 	Enabled bool   `cli:"enabled" help:"if --format=cmd" default:"no"`
 
-	SVG           string `help:"output svg to {stdout, FILENAME}"`
 	SVGNameFormat string `cli:"svg-name-format,sf" default:"%_{protocol}.svg" help:""`
 
 	Except string `cli:"except" default:"(Except: %)" help:"suffix of the name, explaining causes of splitting rules"`
@@ -110,8 +110,12 @@ func (c globalCmd) Run(args []string) error {
 		return nil
 	}
 
-	if c.SVG != "" {
-		err := saveAsSVG(ruleIFs, c.SVG, c.SVGNameFormat)
+	if c.Format == "svg" {
+		name := c.Input
+		if ext := filepath.Ext(name); ext != "" {
+			name = name[:len(name)-len(ext)]
+		}
+		err := saveAsSVG(ruleIFs, name, c.SVGNameFormat)
 		if err != nil {
 			return err
 		}
