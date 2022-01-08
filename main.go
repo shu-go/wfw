@@ -36,6 +36,7 @@ type globalCmd struct {
 	Format  string `cli:"format,f" help:"{list,json,cmd,svg}" default:"list"`
 	Enabled bool   `cli:"enabled" help:"if --format=cmd" default:"no"`
 
+	SVGDir        string `cli:"svg-dir,sd" default:"." help"svg output dir"`
 	SVGNameFormat string `cli:"svg-name-format,sf" default:"%_{aggregation}_{protocol}.svg" help:""`
 
 	Except string `cli:"except" default:"(Except: %)" help:"suffix of the name, explaining causes of splitting rules"`
@@ -121,7 +122,7 @@ func (c globalCmd) Run(args []string) error {
 		if ext := filepath.Ext(name); ext != "" {
 			name = name[:len(name)-len(ext)]
 		}
-		err := saveAsSVG(ruleIFs, name, c.SVGNameFormat, c.Aggregation)
+		err := saveAsSVG(ruleIFs, name, c.SVGDir, c.SVGNameFormat, c.Aggregation)
 		if err != nil {
 			return err
 		}
@@ -420,7 +421,7 @@ func ruleIFToRuleSet(rif RuleIF) wfw.RuleSet {
 	return rs
 }
 
-func saveAsSVG(ruleIFs []RuleIF, dest, nameFormat, aggregation string) error {
+func saveAsSVG(ruleIFs []RuleIF, dest, dir, nameFormat, aggregation string) error {
 	protocolSet := make(map[string]struct{})
 	portSet := make(map[rng.Int]struct{})
 	ipSet := make(map[rng.IPv4]struct{})
@@ -488,7 +489,7 @@ func saveAsSVG(ruleIFs []RuleIF, dest, nameFormat, aggregation string) error {
 			name = strings.Replace(name, "{aggregation}", aggregation, -1)
 
 			var err error
-			file, err = os.Create(name)
+			file, err = os.Create(filepath.Join(dir, name))
 			if err != nil {
 				return err
 			}
