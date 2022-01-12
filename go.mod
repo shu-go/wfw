@@ -6,7 +6,7 @@ require (
 	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b
 	github.com/shu-go/gli v1.3.1
 	github.com/shu-go/gotwant v0.0.0-20190920074605-851c8677556b
-	github.com/shu-go/rng v0.2.1
+	github.com/shu-go/rng v0.3.0
 )
 
 require (
