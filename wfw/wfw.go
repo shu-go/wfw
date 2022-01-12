@@ -92,7 +92,7 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 				} else {
 					wkk2d = rng.NewRange2D(wkk.IP.Start, wkk.IP.End, wkk.Port.Start, wkk.Port.End)
 				}
-				tmp2d := wkk2d.Minus(wki2d)
+				tmp2d := wkk2d.Minus(wki2d, false /*no join*/)
 				tmpIsOrig := (len(tmp2d) == 1 && tmp2d[0].R1.Equal(wkk2d.R1) && tmp2d[0].R2.Equal(wkk2d.R2))
 				tmp := make([]Rule, 0, len(tmp2d))
 				for _, e := range tmp2d {
