@@ -1,6 +1,8 @@
 package wfw
 
 import (
+	"sort"
+
 	"github.com/shu-go/rng"
 )
 
@@ -180,5 +182,169 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 		}
 	}
 
+	// join primary
+
+	wk.Sort(portfirstjoin)
+
+	anyjoined := true
+	for anyjoined {
+		anyjoined = false
+		delidx := -1
+
+	findloop:
+		for i := len(wk) - 2; i >= 0; i-- {
+			for k := len(wk) - 1; k > i; k-- {
+				if wk[i].Protocol != wk[k].Protocol || wk[i].Allow != wk[k].Allow {
+					continue
+				}
+
+				//rog.Print(i, k, wk[i].IP, wk[k].IP, wk[i].Port, wk[k].Port)
+				if portfirstjoin {
+					if wk[i].Port.Equal(wk[k].Port) && wk[i].IP.End.Next().Equal(wk[k].IP.Start) {
+						wk[i].IP.End = wk[k].IP.End
+						delidx = k
+						anyjoined = true
+						break findloop
+					}
+				} else {
+					if wk[i].IP.Equal(wk[k].IP) && wk[i].Port.End.Next().Equal(wk[k].Port.Start) {
+						wk[i].Port.End = wk[k].Port.End
+						delidx = k
+						anyjoined = true
+						//rog.Print("  JOIN")
+						//rog.Print(i, wk[i].IP, wk[i].Port)
+						break findloop
+					}
+				}
+			}
+		}
+
+		if anyjoined {
+			wk = append(wk[:delidx], wk[delidx+1:]...)
+		}
+	}
+
+	// join secondary
+
+	wk.Sort(!portfirstjoin)
+
+	anyjoined = true
+	for anyjoined {
+		anyjoined = false
+		delidx := -1
+
+	findloop2:
+		for i := len(wk) - 2; i >= 0; i-- {
+			for k := len(wk) - 1; k > i; k-- {
+				if wk[i].Protocol != wk[k].Protocol || wk[i].Allow != wk[k].Allow {
+					continue
+				}
+
+				if portfirstjoin {
+					if wk[i].IP.Equal(wk[k].IP) && wk[i].Port.End.Next().Equal(wk[k].Port.Start) {
+						wk[i].Port.End = wk[k].Port.End
+						delidx = k
+						anyjoined = true
+						break findloop2
+					}
+				} else {
+					if wk[i].Port.Equal(wk[k].Port) && wk[i].IP.End.Next().Equal(wk[k].IP.Start) {
+						wk[i].IP.End = wk[k].IP.End
+						delidx = k
+						anyjoined = true
+						break findloop2
+					}
+				}
+			}
+		}
+
+		if anyjoined {
+			wk = append(wk[:delidx], wk[delidx+1:]...)
+		}
+	}
+
 	return wk
+}
+
+func (rs *RuleSet) Sort(portfirst bool) {
+	sort.Slice(*rs, func(i, j int) bool {
+		rsi := (*rs)[i]
+		rsj := (*rs)[j]
+
+		if rsi.Protocol < rsj.Protocol {
+			return true
+		}
+		if rsj.Protocol < rsi.Protocol {
+			return false
+		}
+
+		if rsi.Tag < rsj.Tag {
+			return true
+		}
+		if rsj.Tag < rsi.Tag {
+			return false
+		}
+
+		if portfirst {
+			if rsi.Port.Start.Less(rsj.Port.Start) {
+				return true
+			}
+			if rsj.Port.Start.Less(rsi.Port.Start) {
+				return false
+			}
+
+			if rsi.Port.End.Less(rsj.Port.End) {
+				return true
+			}
+			if rsj.Port.End.Less(rsi.Port.End) {
+				return false
+			}
+
+			if rsi.IP.Start.Less(rsj.IP.Start) {
+				return true
+			}
+			if rsj.IP.Start.Less(rsi.IP.Start) {
+				return false
+			}
+
+			if rsi.IP.End.Less(rsj.IP.End) {
+				return true
+			}
+			if rsj.IP.End.Less(rsi.IP.End) {
+				return false
+			}
+
+		} else {
+			if rsi.IP.Start.Less(rsj.IP.Start) {
+				return true
+			}
+			if rsj.IP.Start.Less(rsi.IP.Start) {
+				return false
+			}
+
+			if rsi.IP.End.Less(rsj.IP.End) {
+				return true
+			}
+			if rsj.IP.End.Less(rsi.IP.End) {
+				return false
+			}
+
+			if rsi.Port.Start.Less(rsj.Port.Start) {
+				return true
+			}
+			if rsj.Port.Start.Less(rsi.Port.Start) {
+				return false
+			}
+
+			if rsi.Port.End.Less(rsj.Port.End) {
+				return true
+			}
+			if rsj.Port.End.Less(rsi.Port.End) {
+				return false
+			}
+
+		}
+
+		return false
+	})
 }
