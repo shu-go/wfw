@@ -36,8 +36,8 @@ type globalCmd struct {
 	Format  string `cli:"format,f" help:"{list,json,cmd,svg}" default:"list"`
 	Enabled bool   `cli:"enabled" help:"if --format=cmd" default:"no"`
 
-	SVGDir        string `cli:"svg-dir,sd" default:"." help"svg output dir"`
-	SVGNameFormat string `cli:"svg-name-format,sf" default:"%_{aggregation}_{protocol}.svg" help:""`
+	SVGDir        string `cli:"svg-dir,sd" default:"." help:"svg output dir"`
+	SVGNameFormat string `cli:"svg-name-format,sf" default:"%_{aggregation}_{protocol}.svg" help:"a name format for files in --svg-dir. % is the name of a rule"`
 
 	Except string `cli:"except" default:"(Except: %)" help:"suffix of the name, explaining causes of splitting rules"`
 
