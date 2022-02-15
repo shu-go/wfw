@@ -64,7 +64,7 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 	wk := make(RuleSet, len(rs))
 	copy(wk, rs)
 
-	for i := len(wk) - 2; i >= 0; i-- {
+	for i := 0; i < len(wk); i++ {
 		wki := wk[i]
 
 		//rog.Print("")
@@ -77,7 +77,7 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 			wki2d = rng.NewRange2D(wki.IP.Start, wki.IP.End, wki.Port.Start, wki.Port.End)
 		}
 
-		for k := i + 1; k < len(wk); k++ {
+		for k := len(wk) - 1; k > i; k-- {
 			wkk := wk[k]
 
 			//rog.Print("")
@@ -114,9 +114,9 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 
 					if !tmpIsOrig && wki.Original && (ipexcept || portexcept) {
 						excepts = make(map[int]Except)
-						if wki.Excepts != nil {
+						if wkk.Excepts != nil {
 							// copy
-							for k, v := range wki.Excepts {
+							for k, v := range wkk.Excepts {
 								excepts[k] = v
 							}
 						}
