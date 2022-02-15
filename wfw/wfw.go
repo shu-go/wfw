@@ -16,13 +16,9 @@ type Rule struct {
 	IP    rng.Range
 
 	Original bool
-	Excepts  map[ /*Tag*/ int]Except
+	Excepts  map[ /*Tag*/ int]bool
 
 	Tag int
-}
-
-type Except struct {
-	Port, IP bool
 }
 
 func (r Rule) Equal(a Rule) bool {
@@ -113,7 +109,7 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 					//rog.Printf("      portexcept=%v, ipexcept=%v", portexcept, ipexcept)
 
 					if !tmpIsOrig && wki.Original && (ipexcept || portexcept) {
-						excepts = make(map[int]Except)
+						excepts = make(map[int]bool)
 						if wkk.Excepts != nil {
 							// copy
 							for k, v := range wkk.Excepts {
@@ -122,9 +118,9 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 						}
 
 						if e, found := excepts[wki.Tag]; found {
-							excepts[wki.Tag] = Except{IP: e.IP || ipexcept, Port: e.Port || portexcept}
+							excepts[wki.Tag] = e || ipexcept || portexcept
 						} else {
-							excepts[wki.Tag] = Except{IP: ipexcept, Port: portexcept}
+							excepts[wki.Tag] = ipexcept || portexcept
 						}
 					}
 					//rog.Printf("      excepts=%#v", excepts)

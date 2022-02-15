@@ -301,12 +301,8 @@ func ruleIFsFromRuleSet(rs wfw.RuleSet, exceptFormat string, origIFs []RuleIF) [
 						nm = origIFs[t].Name
 					}
 
-					if v.IP && v.Port {
+					if v {
 						names = append(names, nm)
-					} else if v.IP {
-						names = append(names, "IP of "+nm)
-					} else {
-						names = append(names, "Port of "+nm)
 					}
 				}
 				name += strings.Replace(exceptFormat, "%", strings.Join(names, ", "), 1)
