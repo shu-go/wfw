@@ -165,7 +165,7 @@ func (c globalCmd) Run(args []string) error {
 			}
 
 			fmt.Printf(
-				"netsh advfirewall firewall add rule  %[1]s  %[2]s  %[3]s  dir=in  profile=any  %[4]s  %[5]s  %[6]s  %[7]s\n",
+				"netsh advfirewall firewall add rule  %[1]s  %[2]s  %[3]s  dir=in  profile=any  %[4]s  %[5]s  %[6]s  %[7]s\r\n",
 				name,
 				enabled,
 				description,
