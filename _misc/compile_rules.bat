@@ -42,7 +42,8 @@ for %%i in (*.json) do (
     echo !a!
     echo ^<option value="!a!"^>!a!^</option^> >> view_svg.html
     wfw -i %%i --format svg --svg-dir svg --svg-name-format %%_{protocol}.svg -a %AGGREGATION%
-    wfw -i %%i --format cmd -a %AGGREGATION% >cmd\!a!.bat
+    echo chcp 65001 >cmd\!a!.bat
+    wfw -i %%i --format cmd -a %AGGREGATION% >>cmd\!a!.bat
 )
 
 (
