@@ -104,7 +104,7 @@ func (c globalCmd) Run(args []string) error {
 
 	ruleIFs := ruleIFsFromRuleSet(result, c.Except, inRuleIFs)
 
-	joinRuleIFs(&ruleIFs, c.Aggregation)
+	ruleIFs = joinRuleIFs(ruleIFs, c.Aggregation)
 
 	if c.Format == "json" {
 		content, err := json.MarshalIndent(ruleIFs, "", "  ")
@@ -329,54 +329,48 @@ func ruleIFsFromRuleSet(rs wfw.RuleSet, exceptFormat string, origIFs []RuleIF) [
 	return ruleIFs
 }
 
-func joinRuleIFs(ruleIFs *[]RuleIF, aggregation string) {
+func joinRuleIFs(ruleIFs []RuleIF, aggregation string) []RuleIF {
+	result := make([]RuleIF, len(ruleIFs))
+	copy(result, ruleIFs)
+
 	if aggregation == "port" {
 		// fix Ports, join IPs
-		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
-			for k := i + 1; k < len((*ruleIFs)); k++ {
-				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
-					(*ruleIFs)[k].Ports == (*ruleIFs)[i].Ports {
-					//
-					(*ruleIFs)[i].IPs += "," + (*ruleIFs)[k].IPs
-					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
-				}
-			}
-		}
-		// fix IPs, join Ports
-		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
-			for k := i + 1; k < len((*ruleIFs)); k++ {
-				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
-					(*ruleIFs)[k].IPs == (*ruleIFs)[i].IPs {
-					//
-					(*ruleIFs)[i].Ports += "," + (*ruleIFs)[k].Ports
-					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
-				}
-			}
-		}
+		result = joinRuleIFsByPorts(result)
+		result = joinRuleIFsByIPs(result)
 	} else {
-		// fix IPs, join Ports
-		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
-			for k := i + 1; k < len((*ruleIFs)); k++ {
-				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
-					(*ruleIFs)[k].IPs == (*ruleIFs)[i].IPs {
-					//
-					(*ruleIFs)[i].Ports += "," + (*ruleIFs)[k].Ports
-					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
-				}
-			}
-		}
-		// fix Ports, join IPs
-		for i := len((*ruleIFs)) - 2; i >= 0; i-- {
-			for k := i + 1; k < len((*ruleIFs)); k++ {
-				if (*ruleIFs)[k].tag == (*ruleIFs)[i].tag && (*ruleIFs)[k].Protocol == (*ruleIFs)[i].Protocol && (*ruleIFs)[k].Allow == (*ruleIFs)[i].Allow &&
-					(*ruleIFs)[k].Ports == (*ruleIFs)[i].Ports {
-					//
-					(*ruleIFs)[i].IPs += "," + (*ruleIFs)[k].IPs
-					(*ruleIFs) = append((*ruleIFs)[:k], (*ruleIFs)[k+1:]...)
-				}
+		result = joinRuleIFsByIPs(result)
+		result = joinRuleIFsByPorts(result)
+	}
+
+	return result
+}
+
+func joinRuleIFsByPorts(ruleIFs []RuleIF) []RuleIF {
+	for i := len(ruleIFs) - 2; i >= 0; i-- {
+		for k := i + 1; k < len(ruleIFs); k++ {
+			if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+				ruleIFs[k].Ports == ruleIFs[i].Ports {
+				//
+				ruleIFs[i].IPs += "," + ruleIFs[k].IPs
+				ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
 			}
 		}
 	}
+	return ruleIFs
+}
+
+func joinRuleIFsByIPs(ruleIFs []RuleIF) []RuleIF {
+	for i := len(ruleIFs) - 2; i >= 0; i-- {
+		for k := i + 1; k < len(ruleIFs); k++ {
+			if ruleIFs[k].tag == ruleIFs[i].tag && ruleIFs[k].Protocol == ruleIFs[i].Protocol && ruleIFs[k].Allow == ruleIFs[i].Allow &&
+				ruleIFs[k].IPs == ruleIFs[i].IPs {
+				//
+				ruleIFs[i].Ports += "," + ruleIFs[k].Ports
+				ruleIFs = append(ruleIFs[:k], ruleIFs[k+1:]...)
+			}
+		}
+	}
+	return ruleIFs
 }
 
 func ruleIFToRuleSet(rif RuleIF) wfw.RuleSet {
