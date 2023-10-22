@@ -3,6 +3,7 @@ package wfw
 import (
 	"sort"
 
+	"github.com/shu-go/orderedmap"
 	"github.com/shu-go/rng"
 )
 
@@ -16,7 +17,7 @@ type Rule struct {
 	IP    rng.Range
 
 	Original bool
-	Excepts  map[ /*Tag*/ int]bool
+	Excepts  *orderedmap.OrderedMap[ /*Tag*/ int, bool]
 
 	Tag int
 }
@@ -109,18 +110,18 @@ func (rs RuleSet) Hoge(portfirstjoin bool) RuleSet {
 					//rog.Printf("      portexcept=%v, ipexcept=%v", portexcept, ipexcept)
 
 					if !tmpIsOrig && wki.Original && (ipexcept || portexcept) {
-						excepts = make(map[int]bool)
+						excepts = orderedmap.New[int, bool]()
 						if wkk.Excepts != nil {
 							// copy
-							for k, v := range wkk.Excepts {
-								excepts[k] = v
+							for _, k := range wkk.Excepts.Keys() {
+								excepts.Set(k, wkk.Excepts.GetDefault(k, false))
 							}
 						}
 
-						if e, found := excepts[wki.Tag]; found {
-							excepts[wki.Tag] = e || ipexcept || portexcept
+						if e, found := excepts.Get(wki.Tag); found {
+							excepts.Set(wki.Tag, e || ipexcept || portexcept)
 						} else {
-							excepts[wki.Tag] = ipexcept || portexcept
+							excepts.Set(wki.Tag, ipexcept || portexcept)
 						}
 					}
 					//rog.Printf("      excepts=%#v", excepts)

@@ -293,15 +293,15 @@ func ruleIFsFromRuleSet(rs wfw.RuleSet, exceptFormat string, origIFs []RuleIF) [
 		name := r.Name
 
 		if exceptFormat != "" {
-			if len(r.Excepts) > 0 {
-				names := make([]string, 0, len(r.Excepts))
-				for t, v := range r.Excepts {
+			if r.Excepts.Len() > 0 {
+				names := make([]string, 0, r.Excepts.Len())
+				for _, t := range r.Excepts.Keys() {
 					nm := ""
 					if t < len(origIFs) {
 						nm = origIFs[t].Name
 					}
 
-					if v {
+					if r.Excepts.GetDefault(t, false) {
 						names = append(names, nm)
 					}
 				}
