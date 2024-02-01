@@ -14,7 +14,7 @@ import (
 	"time"
 
 	svg "github.com/ajstarks/svgo"
-	"github.com/shu-go/gli"
+	"github.com/shu-go/gli/v2"
 	"github.com/shu-go/rng"
 	"github.com/shu-go/wfw/wfw"
 )

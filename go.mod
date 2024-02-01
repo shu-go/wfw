@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b
-	github.com/shu-go/gli v1.5.7
+	github.com/shu-go/gli/v2 v2.0.1
 	github.com/shu-go/gotwant v0.0.0-20190920074605-b4f19c0bac91
 	github.com/shu-go/orderedmap v0.0.0-20231016081007-278266312c68
 	github.com/shu-go/rng v0.3.0
